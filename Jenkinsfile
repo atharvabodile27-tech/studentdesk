@@ -124,7 +124,6 @@ pipeline {
         }
 
         stage('Docker Push') {
-            when { branch 'main' }        // sirf main branch pe push
             steps {
                 echo "=== Stage 8: Docker Hub pe push ==="
                 sh '''
@@ -139,7 +138,6 @@ pipeline {
         }
 
         stage('Deploy') {
-            when { branch 'main' }
             steps {
                 echo "=== Stage 9: Deployment (SSH se VM / cloud pe) ==="
                 // Option A: same machine pe redeploy (simplest - college demo ke liye best)
