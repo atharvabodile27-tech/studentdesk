@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if student else 'Add' }} Student | StudentDesk{% endblock %}
+{% block content %}
+<h1>{{ 'Edit Student' if student else 'Add New Student' }}</h1>
+<p class="subtitle">{{ 'Existing record update karo.' if student else 'Naya student record add karo.' }}</p>
+
+<div class="card" style="max-width:760px">
+  <form method="POST">
+    <div class="form-grid">
+      <div class="field">
+        <label>Roll Number *</label>
+        <input type="text" name="roll_no" required placeholder="CS2025001"
+               value="{{ student.roll_no if student else '' }}"
+               {{ 'readonly style="background:#f8fafc"' if student }}>
+      </div>
+      <div class="field">
+        <label>Full Name *</label>
+        <input type="text" name="name" required placeholder="Aarav Sharma"
+               value="{{ student.name if student else '' }}">
+      </div>
+      <div class="field">
+        <label>Email *</label>
+        <input type="email" name="email" required placeholder="student@example.com"
+               value="{{ student.email if student else '' }}">
+      </div>
+      <div class="field">
+        <label>Course *</label>
+        <select name="course" required>
+          {% for c in ['B.Tech CSE','B.Tech ECE','B.Tech ME','B.Tech Civil','MCA','MBA','M.Sc'] %}
+          <option value="{{ c }}" {{ 'selected' if student and student.course==c }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Year *</label>
+        <select name="year" required>
+          {% for y in [1,2,3,4] %}
+          <option value="{{ y }}" {{ 'selected' if student and student.year==y }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Marks (%) * — 0 se 100</label>
+        <input type="number" name="marks" step="0.1" min="0" max="100" required
+               placeholder="85.5" value="{{ student.marks if student else '' }}">
+      </div>
+      <div class="field full">
+        <label>Status</label>
+        <select name="status">
+          {% for st in ['Active','Inactive','Graduated'] %}
+          <option value="{{ st }}" {{ 'selected' if student and student.status==st }}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin-top:20px">
+      <button class="btn" type="submit">{{ 'Update Student' if student else 'Add Student' }}</button>
+      <a class="btn secondary" href="{{ url_for('main.student_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

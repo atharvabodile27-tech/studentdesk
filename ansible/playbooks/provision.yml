@@ -1,0 +1,130 @@
+---
+# ===================================================================
+# PROVISION PLAYBOOK
+# Ek khali Ubuntu VM ko app-ready bana deta hai:
+#   updates -> Docker -> Docker Compose -> Python -> firewall -> folders
+#
+# Run:  ansible-playbook playbooks/provision.yml -i inventory/hosts.ini
+# ===================================================================
+- name: Provision StudentDesk server
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  vars:
+    app_user: ubuntu
+    app_dir: /opt/studentdesk
+    python_packages:
+      - python3
+      - python3-pip
+      - python3-venv
+      - git
+      - curl
+
+  tasks:
+    - name: APT cache update karo
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Zaroori system packages upgrade
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+      tags: [slow]
+
+    - name: Basic packages install karo
+      ansible.builtin.apt:
+        name: "{{ python_packages }}"
+        state: present
+
+    # ------------------- Docker install -------------------
+    - name: Docker ke liye GPG key add karo
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: true
+
+    - name: Docker apt repository add karo
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Docker Engine install karo
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Docker service enable + start
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: "{{ app_user }} ko docker group me add karo (sudo ke bina docker chale)"
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: yes
+
+    # ------------------- App directory -------------------
+    - name: App folder banao
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Logs folder banao
+      ansible.builtin.file:
+        path: "{{ app_dir }}/logs"
+        state: directory
+        owner: "{{ app_user }}"
+        mode: "0755"
+
+    # ------------------- Firewall -------------------
+    - name: UFW - SSH allow karo (pehle, warna lock out ho jaoge!)
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+      ignore_errors: yes
+
+    - name: UFW - app port 5000 allow
+      community.general.ufw:
+        rule: allow
+        port: "5000"
+        proto: tcp
+      ignore_errors: yes
+
+    - name: UFW - monitoring ports allow (9090 Prometheus, 3000 Grafana)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: ["9090", "3000"]
+      ignore_errors: yes
+
+    - name: UFW enable karo
+      community.general.ufw:
+        state: enabled
+        policy: deny
+      ignore_errors: yes
+
+    # ------------------- Verification -------------------
+    - name: Docker version check
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Result dikhao
+      ansible.builtin.debug:
+        msg: "{{ docker_version.stdout }} — server provision ho gaya ✅"

@@ -1,0 +1,116 @@
+---
+# ===================================================================
+# MONITORING PLAYBOOK
+# VM pe Prometheus + Grafana + Node Exporter Docker me install karta hai.
+#
+# Run:  ansible-playbook playbooks/monitoring.yml -i inventory/hosts.ini
+# ===================================================================
+- name: Setup monitoring stack
+  hosts: webservers
+  become: true
+
+  vars:
+    app_dir: /opt/studentdesk
+    mon_dir: /opt/monitoring
+    prometheus_image: "prom/prometheus:v2.54.1"
+    grafana_image: "grafana/grafana:11.2.0"
+    node_exporter_image: "prom/node-exporter:v1.8.2"
+    grafana_password: "{{ lookup('env', 'GRAFANA_PASSWORD') | default('admin123', true) }}"
+
+  tasks:
+    - name: Monitoring folders banao
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ mon_dir }}"
+        - "{{ mon_dir }}/data/prometheus"
+        - "{{ mon_dir }}/data/grafana"
+
+    # --------- Config copy ---------
+    - name: Prometheus config copy karo
+      ansible.builtin.copy:
+        src: ../../monitoring/prometheus.yml
+        dest: "{{ mon_dir }}/prometheus.yml"
+        mode: "0644"
+      notify: restart prometheus
+
+    - name: Alert rules copy karo
+      ansible.builtin.copy:
+        src: ../../monitoring/alerts.yml
+        dest: "{{ mon_dir }}/alerts.yml"
+        mode: "0644"
+      notify: restart prometheus
+
+    # VM pe app localhost:5000 pe chalti hai, isliye targets rewrite karo
+    - name: Prometheus targets ko VM ke hisaab se set karo
+      ansible.builtin.replace:
+        path: "{{ mon_dir }}/prometheus.yml"
+        regexp: "targets: \\['app:5000'\\]"
+        replace: "targets: ['localhost:5000']"
+      notify: restart prometheus
+
+    # --------- Node Exporter ---------
+    - name: Node Exporter chalao (host CPU/RAM/disk metrics)
+      community.docker.docker_container:
+        name: node-exporter
+        image: "{{ node_exporter_image }}"
+        state: started
+        restart_policy: unless-stopped
+        network_mode: host
+        pid_mode: host
+        command:
+          - "--path.procfs=/host/proc"
+          - "--path.sysfs=/host/sys"
+          - "--path.rootfs=/rootfs"
+        volumes:
+          - /proc:/host/proc:ro
+          - /sys:/host/sys:ro
+          - /:/rootfs:ro
+
+    # --------- Prometheus ---------
+    - name: Prometheus chalao
+      community.docker.docker_container:
+        name: prometheus
+        image: "{{ prometheus_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "9090:9090"
+        volumes:
+          - "{{ mon_dir }}/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+          - "{{ mon_dir }}/alerts.yml:/etc/prometheus/alerts.yml:ro"
+          - "{{ mon_dir }}/data/prometheus:/prometheus"
+        command:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+          - "--storage.tsdb.path=/prometheus"
+
+    # --------- Grafana ---------
+    - name: Grafana chalao
+      community.docker.docker_container:
+        name: grafana
+        image: "{{ grafana_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "3000:3000"
+        env:
+          GF_SECURITY_ADMIN_USER: admin
+          GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_password }}"
+        volumes:
+          - "{{ mon_dir }}/data/grafana:/var/lib/grafana"
+
+    - name: Monitoring URLs
+      ansible.builtin.debug:
+        msg:
+          - "📊 Grafana    : http://{{ inventory_hostname }}:3000  (admin / {{ grafana_password }})"
+          - "📈 Prometheus : http://{{ inventory_hostname }}:9090"
+          - "🖥️  Node Exp.  : http://{{ inventory_hostname }}:9100/metrics"
+
+  handlers:
+    - name: restart prometheus
+      community.docker.docker_container:
+        name: prometheus
+        state: started
+        restart: yes

@@ -1,0 +1,34 @@
+# ===================================================================
+# Jenkins ko Docker me chalane ka compose file
+# Use:  cd jenkins && docker compose up -d
+# UI:   http://localhost:8080   (initial admin password niche ke command se)
+# ===================================================================
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins
+    restart: unless-stopped
+    user: root                      # docker.sock use karne ke liye (DinD pattern)
+    ports:
+      - "8080:8080"                 # Jenkins UI
+      - "50000:50000"               # Agent port
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Djenkins.install.runSetupWizard=true
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock   # Jenkins container se Docker chalane ke liye
+      - /usr/bin/docker:/usr/bin/docker             # docker CLI (Linux host)
+    networks:
+      - devops-net
+
+  # Optional: Jenkins agent alag container me (scale karne ke liye)
+  # agent:
+  #   image: jenkins/inbound-agent:latest-jdk17
+  #   ...
+
+volumes:
+  jenkins_home:
+
+networks:
+  devops-net:
+    driver: bridge

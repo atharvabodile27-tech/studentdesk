@@ -1,0 +1,46 @@
+# ===================================================================
+# Prometheus configuration
+# Metrics scrape karta hai: apni app se + node-exporter se
+# ===================================================================
+global:
+  scrape_interval: 15s          # kitne second me ek baar data le
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'studentdesk-monitor'
+
+# Alertmanager (optional - alerting chahiye to uncomment karo)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# Alert rules file
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # Prometheus khud ko monitor kare
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Hamari Flask app - /metrics endpoint se (app ko prometheus_client se enable karna hoga)
+  # Agar /metrics nahi hai to Prometheus sirf 'up' metric track karega via /health probe
+  - job_name: 'studentdesk-app'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app:5000']
+        labels:
+          app: 'studentdesk'
+          env: 'dev'
+
+  # Blackbox style health probe - simple HTTP 200 check
+  - job_name: 'studentdesk-health'
+    metrics_path: /health
+    static_configs:
+      - targets: ['app:5000']
+
+  # Host machine (CPU / RAM / Disk) ke metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

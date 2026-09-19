@@ -1,0 +1,57 @@
+# ===================================================================
+# Prometheus alert rules
+# Inhe Alertmanager pe bhej sakte ho (email/Slack) — college demo ke
+# liye rules file dikhana hi kaafi hai.
+# ===================================================================
+groups:
+  - name: studentdesk-alerts
+    rules:
+      - alert: AppIsDown
+        expr: up{job="studentdesk-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "StudentDesk app down hai"
+          description: "{{ $labels.instance }} pichhle 1 minute se respond nahi kar raha."
+
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Requests slow ho gaye hain"
+          description: "95th percentile latency 1 second se zyada hai."
+
+      - alert: HighErrorRate
+        expr: sum(rate(flask_http_request_total{status=~"5.."}[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "5xx errors badh gaye hain"
+
+      - alert: HostHighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Server CPU 85% se upar hai"
+
+      - alert: HostOutOfMemory
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Server memory 15% se kam bachi hai"
+
+      - alert: HostDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space 15% se kam bacha hai"

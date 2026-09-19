@@ -1,0 +1,100 @@
+---
+# ===================================================================
+# DEPLOY PLAYBOOK
+# Code ko VM pe le jaakar Docker container me chalata hai.
+# Ye playbook IDEMPOTENT hai - kitni baar bhi chalao, result same.
+#
+# Run:  ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini
+# ===================================================================
+- name: Deploy StudentDesk
+  hosts: webservers
+  become: true
+
+  vars:
+    app_dir: /opt/studentdesk
+    app_user: ubuntu
+    app_port: 5000
+    image_name: studentdesk
+    image_tag: "{{ lookup('env', 'IMAGE_TAG') | default('1.0.0', true) }}"
+    git_repo: "{{ lookup('env', 'GIT_REPO') | default('https://github.com/YOUR_USERNAME/studentdesk.git', true) }}"
+    git_branch: main
+    secret_key: "{{ lookup('env', 'APP_SECRET_KEY') | default('ansible-deploy-secret', true) }}"
+
+  tasks:
+    # ---------------- 1. Code sync ----------------
+    - name: Git se latest code pull karo
+      ansible.builtin.git:
+        repo: "{{ git_repo }}"
+        dest: "{{ app_dir }}/src"
+        version: "{{ git_branch }}"
+        force: yes
+      become_user: "{{ app_user }}"
+      register: git_result
+
+    - name: Code change hua ya nahi batayo
+      ansible.builtin.debug:
+        msg: "{{ 'Naya commit mila - redeploy hoga' if git_result.changed else 'Code already latest hai' }}"
+
+    # ---------------- 2. Docker image build ----------------
+    - name: Docker image build karo
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        tag: "{{ image_tag }}"
+        source: build
+        build:
+          path: "{{ app_dir }}/src"
+          pull: yes
+        force_source: "{{ git_result.changed }}"
+      register: image_build
+
+    # ---------------- 3. Purana container hatao, naya chalao ----------------
+    - name: Purana container stop + remove karo
+      community.docker.docker_container:
+        name: studentdesk
+        state: absent
+      register: old_container
+
+    - name: Naya container start karo
+      community.docker.docker_container:
+        name: studentdesk
+        image: "{{ image_name }}:{{ image_tag }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ app_port }}:5000"
+        env:
+          SECRET_KEY: "{{ secret_key }}"
+          APP_VERSION: "{{ image_tag }}"
+          DATABASE_URL: "sqlite:////app/instance/studentdesk.db"
+        volumes:
+          - studentdesk_data:/app/instance
+        log_driver: json-file
+        log_options:
+          max-size: "10m"
+          max-file: "3"
+
+    # ---------------- 4. Verify ----------------
+    - name: App ko start hone ka time do
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Health check karo
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}/health"
+        method: GET
+        status_code: 200
+      register: health
+      retries: 5
+      delay: 3
+      until: health.status == 200
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "✅ DEPLOYMENT SUCCESSFUL"
+          - "App URL      : http://{{ ansible_host | default(inventory_hostname) }}:{{ app_port }}"
+          - "Health check : {{ health.json.status }}"
+          - "Image        : {{ image_name }}:{{ image_tag }}"

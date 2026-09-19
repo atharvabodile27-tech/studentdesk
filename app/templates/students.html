@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Students | StudentDesk{% endblock %}
+{% block content %}
+<h1>Students</h1>
+<p class="subtitle">Total {{ students|length }} record(s).</p>
+
+<div class="card">
+  <form class="toolbar" method="GET">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search name / roll no / email..."
+           style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;min-width:260px">
+    <select name="course" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px">
+      <option value="">All courses</option>
+      {% for c in all_courses %}
+      <option value="{{ c }}" {{ 'selected' if c==course }}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn small" type="submit">Search</button>
+    <a class="btn small secondary" href="{{ url_for('main.student_list') }}">Reset</a>
+    <div class="spacer"></div>
+    <a class="btn small" href="{{ url_for('main.student_add') }}">+ Add Student</a>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Roll No</th><th>Name</th><th>Email</th><th>Course</th><th>Year</th>
+        <th>Marks</th><th>Grade</th><th>Result</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      <tr>
+        <td><code>{{ s.roll_no }}</code></td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.email }}</td>
+        <td>{{ s.course }}</td>
+        <td>{{ s.year }}</td>
+        <td>{{ s.marks }}</td>
+        <td>{{ s.grade() }}</td>
+        <td><span class="badge {{ 'pass' if s.result()=='PASS' else 'fail' }}">{{ s.result() }}</span></td>
+        <td><span class="badge {{ s.status|lower }}">{{ s.status }}</span></td>
+        <td style="white-space:nowrap">
+          <a class="btn small secondary" href="{{ url_for('main.student_edit', student_id=s.id) }}">Edit</a>
+          <form method="POST" action="{{ url_for('main.student_delete', student_id=s.id) }}"
+                style="display:inline" onsubmit="return confirm('{{ s.name }} ko delete karna hai?');">
+            <button class="btn small danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="empty">Koi student nahi mila. "+ Add Student" pe click karo.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

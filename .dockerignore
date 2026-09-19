@@ -1,0 +1,24 @@
+# Build context me ye cheezein mat bhejo (build fast + image chhoti hoti hai)
+.git
+.gitignore
+.github
+ansible
+monitoring
+jenkins
+docs
+instance
+*.db
+*.sqlite3
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+venv
+.venv
+.env
+*.md
+!README.md
+Dockerfile
+docker-compose*.yml
+Jenkinsfile

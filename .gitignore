@@ -1,0 +1,30 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# ---- App ----
+instance/
+*.db
+*.sqlite3
+logs/
+
+# ---- Env / secrets (kabhi commit mat karna!) ----
+.env
+*.pem
+*.key
+secrets.yml
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+
+# ---- Ansible ----
+*.retry
