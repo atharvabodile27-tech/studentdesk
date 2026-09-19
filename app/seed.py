@@ -1,6 +1,14 @@
 """
 Sample data (seed) - pehli baar app chalane par 6 students + 1 admin user add ho jayenge.
+
+NOTE (race-safety): gunicorn jaise multi-worker servers pe har worker alag process
+me create_app() chalata hai. Agar do workers ek saath seed karein to UNIQUE
+constraint violation hota hai. Isliye har commit ko try/except se guard kiya
+hai: jo worker race haar jaye wo chup-chaap rollback kar deta hai, kyunki
+data jeetne wale worker ne pehle se daal diya hota hai.
 """
+from sqlalchemy.exc import IntegrityError
+
 from .models import db, Student, User
 
 SAMPLE_STUDENTS = [
@@ -13,6 +21,16 @@ SAMPLE_STUDENTS = [
 ]
 
 
+def _safe_commit():
+    """Commit karo; race condition me IntegrityError aaye to rollback kar do."""
+    try:
+        db.session.commit()
+        return True
+    except IntegrityError:
+        db.session.rollback()
+        return False
+
+
 def seed_if_empty():
     if Student.query.count() == 0:
         for row in SAMPLE_STUDENTS:
@@ -20,10 +38,10 @@ def seed_if_empty():
                 roll_no=row[0], name=row[1], email=row[2],
                 course=row[3], year=row[4], marks=row[5], status=row[6],
             ))
-        db.session.commit()
+        _safe_commit()
 
-    if User.query.count() == 0:
+    if User.query.filter_by(username="admin").first() is None:
         admin = User(username="admin")
         admin.set_password("admin123")   # demo password - production me kabhi mat karna
         db.session.add(admin)
-        db.session.commit()
+        _safe_commit()
