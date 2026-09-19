@@ -107,7 +107,7 @@ pipeline {
                     docker run -d --name ${APP_NAME}-smoke -p 5055:5000 ${APP_NAME}:${IMAGE_TAG}
                     sleep 8
                     for i in $(seq 1 10); do
-                      if curl -fsS http://localhost:5055/health; then
+                      if curl -fsS http://host.docker.internal:5055/health; then
                         echo ""
                         echo "SMOKE TEST PASSED"
                         docker rm -f ${APP_NAME}-smoke
@@ -150,7 +150,7 @@ pipeline {
                       -e SECRET_KEY="${DOCKER_SECRET_KEY:-jenkins-deploy-secret}" \
                       ${APP_NAME}:${IMAGE_TAG}
                     sleep 5
-                    curl -fsS http://localhost:5000/health && echo " <- DEPLOYED OK"
+                    curl -fsS http://host.docker.internal:5000/health && echo " <- DEPLOYED OK"
                 '''
 
                 // Option B: remote VM pe deploy karna ho to ye use karo

@@ -2,11 +2,48 @@
 StudentDesk - Factory function.
 Yahan Flask app create hota hai, DB init hota hai aur blueprints register hote hain.
 """
+import logging
 import os
-from flask import Flask
 
-from .config import Config
+from flask import Flask, request
+
+from .config import BASE_DIR, Config
 from .models import db
+
+
+def _init_database(app):
+    """Tables + seed data — multi-worker safe.
+
+    gunicorn ke 2+ workers ek saath create_app() chalate hain. SQLite pe
+    simultaneous CREATE TABLE / INSERT race condition karta hai
+    ("table already exists" / "UNIQUE constraint failed").
+    File lock (fcntl.flock) se ek waqt me sirf ek worker init karta hai,
+    baaki workers line me wait karte hain.
+    Windows pe fcntl nahi hota — wahan dev server/tests single-process
+    hote hain, isliye bina lock ke seedha init kar dete hain.
+    """
+
+    def _do_init():
+        db.create_all()
+        from .seed import seed_if_empty
+        seed_if_empty()
+
+    lock_dir = os.path.join(BASE_DIR, "instance")
+    os.makedirs(lock_dir, exist_ok=True)
+    lock_path = os.path.join(lock_dir, ".init.lock")
+
+    try:
+        import fcntl
+    except ImportError:
+        _do_init()
+        return
+
+    with open(lock_path, "w") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            _do_init()
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 
 def create_app(config_class=Config):
@@ -25,11 +62,9 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 
-    # ---- DB tables + sample data ----
+    # ---- DB tables + sample data (race-safe) ----
     with app.app_context():
-        db.create_all()
-        from .seed import seed_if_empty
-        seed_if_empty()
+        _init_database(app)
 
     # ---- Health check (Docker / Monitoring ke liye zaroori) ----
     @app.route("/health")
@@ -41,8 +76,6 @@ def create_app(config_class=Config):
     init_metrics(app)
 
     # ---- Simple request logging (log management demo) ----
-    import logging
-    from flask import request as _req
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -51,7 +84,7 @@ def create_app(config_class=Config):
     @app.after_request
     def log_request(response):
         app.logger.info(
-            "%s %s -> %s", _req.method, _req.path, response.status_code
+            "%s %s -> %s", request.method, request.path, response.status_code
         )
         return response
 
