@@ -34,11 +34,6 @@ scrape_configs:
           app: 'studentdesk'
           env: 'dev'
 
-  # Blackbox style health probe - simple HTTP 200 check
-  - job_name: 'studentdesk-health'
-    metrics_path: /health
-    static_configs:
-      - targets: ['host.docker.internal:5000']
 
   # Host machine (CPU / RAM / Disk) ke metrics
   - job_name: 'node'
