@@ -3,6 +3,7 @@
 #
 #   sirf app chalana:      docker compose up -d app
 #   pura stack:            docker compose --profile monitoring up -d
+#   sirf monitoring:       docker compose --profile monitoring up -d prometheus grafana node-exporter
 #   logs dekhna:           docker compose logs -f app
 #   band karna:            docker compose down
 # ===================================================================
@@ -41,10 +42,13 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - studentdesk-net
 
@@ -59,6 +63,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     networks:

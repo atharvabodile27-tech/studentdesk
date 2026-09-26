@@ -16,7 +16,7 @@ global:
 
 # Alert rules file
 rule_files:
-  - "alerts.yml"
+  - "/etc/prometheus/alerts.yml"
 
 scrape_configs:
   # Prometheus khud ko monitor kare
@@ -29,7 +29,7 @@ scrape_configs:
   - job_name: 'studentdesk-app'
     metrics_path: /metrics
     static_configs:
-      - targets: ['app:5000']
+      - targets: ['host.docker.internal:5000']
         labels:
           app: 'studentdesk'
           env: 'dev'
@@ -38,7 +38,7 @@ scrape_configs:
   - job_name: 'studentdesk-health'
     metrics_path: /health
     static_configs:
-      - targets: ['app:5000']
+      - targets: ['host.docker.internal:5000']
 
   # Host machine (CPU / RAM / Disk) ke metrics
   - job_name: 'node'
