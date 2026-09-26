@@ -74,6 +74,10 @@ services:
     image: prom/node-exporter:v1.8.2
     container_name: studentdesk-node-exporter
     profiles: ["monitoring"]
+    command:
+      # container ke andar root fs "overlay" hota hai — default exclude list
+      # usse hata deti hai, isliye overlay ko allow karo (Disk Free panel ke liye)
+      - "--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$"
     ports:
       - "9100:9100"
     networks:

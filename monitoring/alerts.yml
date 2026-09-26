@@ -16,7 +16,7 @@ groups:
           description: "{{ $labels.instance }} pichhle 1 minute se respond nahi kar raha."
 
       - alert: HighRequestLatency
-        expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 1
+        expr: histogram_quantile(0.95, sum by (le) (rate(studentdesk_http_request_duration_seconds_bucket[5m]))) > 1
         for: 2m
         labels:
           severity: warning
@@ -25,7 +25,7 @@ groups:
           description: "95th percentile latency 1 second se zyada hai."
 
       - alert: HighErrorRate
-        expr: sum(rate(flask_http_request_total{status=~"5.."}[5m])) > 0.1
+        expr: sum(rate(studentdesk_http_requests_total{status=~"5.."}[5m])) > 0.1
         for: 2m
         labels:
           severity: critical
