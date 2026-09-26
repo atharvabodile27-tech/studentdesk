@@ -9,6 +9,8 @@ services:
     container_name: jenkins
     restart: unless-stopped
     user: root                      # docker.sock use karne ke liye (DinD pattern)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"                 # Jenkins UI
       - "50000:50000"               # Agent port
@@ -17,7 +19,7 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock   # Jenkins container se Docker chalane ke liye
-      - /usr/bin/docker:/usr/bin/docker             # docker CLI (Linux host)
+
     networks:
       - devops-net
 
