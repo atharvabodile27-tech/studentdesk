@@ -54,7 +54,7 @@ pipeline {
                 sh '''
                     . venv/bin/activate
                     python -m compileall -q app run.py
-                    echo "Build SUCCESS - sabhi .py files compile ho gayi"
+                    echo "Build SUCCESS - all Python files compiled"
                 '''
             }
         }
@@ -101,7 +101,7 @@ pipeline {
 
         stage('Smoke Test (Container)') {
             steps {
-                echo "=== Stage 7: Container ko chala ke /health check karo ==="
+                echo "=== Stage 7: Start container and verify /health ==="
                 sh '''
                     docker rm -f ${APP_NAME}-smoke || true
                     docker run -d --name ${APP_NAME}-smoke -p 5055:5000 ${APP_NAME}:${IMAGE_TAG}
@@ -125,7 +125,7 @@ pipeline {
 
         stage('Docker Push') {
             steps {
-                echo "=== Stage 8: Docker Hub pe push ==="
+                echo "=== Stage 8: Push image to Docker Hub ==="
                 sh '''
                     echo "${DOCKERHUB_CREDENTIALS_PSW}" | docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
                     docker tag ${APP_NAME}:${IMAGE_TAG} ${DOCKERHUB_CREDENTIALS_USR}/${APP_NAME}:${IMAGE_TAG}
@@ -139,7 +139,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo "=== Stage 9: Deployment (SSH se VM / cloud pe) ==="
+                echo "=== Stage 9: Deployment (recreate container on server) ==="
                 // Option A: same machine pe redeploy (simplest - college demo ke liye best)
                 sh '''
                     docker rm -f ${APP_NAME} || true
@@ -170,13 +170,13 @@ pipeline {
 
     post {
         success {
-            echo "✅ PIPELINE SUCCESS — Build #${env.BUILD_NUMBER} deploy ho gaya."
+            echo "✅ PIPELINE SUCCESS — Build #${env.BUILD_NUMBER} deployed."
         }
         failure {
-            echo "❌ PIPELINE FAILED — Console Output dekho aur error fix karo."
+            echo "❌ PIPELINE FAILED — check Console Output and fix the error."
         }
         always {
-            echo "=== Cleanup: workspace me test reports archive ==="
+            echo "=== Cleanup: archiving test reports from workspace ==="
             archiveArtifacts artifacts: 'reports/*.xml', allowEmptyArchive: true
             cleanWs(deleteDirs: true, notFailBuild: true)   // Workspace Cleanup plugin chahiye
         }

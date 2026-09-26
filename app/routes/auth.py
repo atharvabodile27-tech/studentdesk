@@ -17,12 +17,12 @@ def login():
             flash(f"Welcome back, {user.username}!", "success")
             return redirect(url_for("main.dashboard"))
 
-        flash("Galat username ya password.", "danger")
+        flash("Incorrect username or password.", "danger")
     return render_template("login.html")
 
 
 @auth_bp.route("/logout")
 def logout():
     session.clear()
-    flash("Aap logout ho gaye.", "info")
+    flash("You have been logged out.", "info")
     return redirect(url_for("auth.login"))

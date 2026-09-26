@@ -67,21 +67,21 @@ def student_add():
             marks = float(request.form.get("marks", 0))
             year = int(request.form.get("year", 1))
         except ValueError:
-            flash("Marks aur Year numbers hone chahiye.", "danger")
+            flash("Marks and Year must be numeric.", "danger")
             return render_template("student_form.html", student=None)
 
         if not (0 <= marks <= 100):
-            flash("Marks 0 se 100 ke beech hone chahiye.", "danger")
+            flash("Marks must be between 0 and 100.", "danger")
             return render_template("student_form.html", student=None)
 
         roll_no = request.form.get("roll_no", "").strip()
         email = request.form.get("email", "").strip()
 
         if Student.query.filter_by(roll_no=roll_no).first():
-            flash("Ye Roll Number pehle se exist karta hai.", "danger")
+            flash("This Roll Number already exists.", "danger")
             return render_template("student_form.html", student=None)
         if Student.query.filter_by(email=email).first():
-            flash("Ye Email pehle se registered hai.", "danger")
+            flash("This Email is already registered.", "danger")
             return render_template("student_form.html", student=None)
 
         s = Student(
@@ -95,7 +95,7 @@ def student_add():
         )
         db.session.add(s)
         db.session.commit()
-        flash(f"Student {s.name} add ho gaya.", "success")
+        flash(f"Student {s.name} added successfully.", "success")
         return redirect(url_for("main.student_list"))
 
     return render_template("student_form.html", student=None)
@@ -110,7 +110,7 @@ def student_edit(student_id):
             s.marks = float(request.form.get("marks", s.marks))
             s.year = int(request.form.get("year", s.year))
         except ValueError:
-            flash("Marks aur Year numbers hone chahiye.", "danger")
+            flash("Marks and Year must be numeric.", "danger")
             return render_template("student_form.html", student=s)
 
         s.name = request.form.get("name", s.name).strip()
@@ -118,7 +118,7 @@ def student_edit(student_id):
         s.course = request.form.get("course", s.course).strip()
         s.status = request.form.get("status", s.status)
         db.session.commit()
-        flash("Details update ho gayi.", "success")
+        flash("Details updated successfully.", "success")
         return redirect(url_for("main.student_list"))
 
     return render_template("student_form.html", student=s)
@@ -130,5 +130,5 @@ def student_delete(student_id):
     s = db.get_or_404(Student, student_id)
     db.session.delete(s)
     db.session.commit()
-    flash(f"{s.name} delete kar diya gaya.", "warning")
+    flash(f"{s.name} has been deleted.", "warning")
     return redirect(url_for("main.student_list"))

@@ -2,7 +2,7 @@
 {% block title %}{{ 'Edit' if student else 'Add' }} Student | StudentDesk{% endblock %}
 {% block content %}
 <h1>{{ 'Edit Student' if student else 'Add New Student' }}</h1>
-<p class="subtitle">{{ 'Existing record update karo.' if student else 'Naya student record add karo.' }}</p>
+<p class="subtitle">{{ 'Update the existing record.' if student else 'Add a new student record.' }}</p>
 
 <div class="card" style="max-width:760px">
   <form method="POST">

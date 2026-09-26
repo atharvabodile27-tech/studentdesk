@@ -32,10 +32,10 @@ def api_create_student():
         marks = float(data["marks"])
         year = int(data["year"])
     except (TypeError, ValueError):
-        return jsonify({"error": "marks aur year numeric hone chahiye"}), 400
+        return jsonify({"error": "marks and year must be numeric"}), 400
 
     if not (0 <= marks <= 100):
-        return jsonify({"error": "marks 0-100 range me hone chahiye"}), 400
+        return jsonify({"error": "marks must be in the 0-100 range"}), 400
 
     if Student.query.filter_by(roll_no=data["roll_no"]).first():
         return jsonify({"error": "roll_no already exists"}), 409

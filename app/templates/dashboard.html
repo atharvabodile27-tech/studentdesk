@@ -2,7 +2,7 @@
 {% block title %}Dashboard | StudentDesk{% endblock %}
 {% block content %}
 <h1>Dashboard</h1>
-<p class="subtitle">Ek nazar me pura data — ye numbers API <code>/api/stats</code> se bhi milte hain.</p>
+<p class="subtitle">All key metrics at a glance — the same numbers are available via the <code>/api/stats</code> endpoint as well.</p>
 
 <div class="stats">
   <div class="stat">
@@ -57,7 +57,7 @@
         <td><span class="badge {{ 'pass' if s.result()=='PASS' else 'fail' }}">{{ s.result() }}</span></td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="empty">Koi student nahi mila.</td></tr>
+      <tr><td colspan="7" class="empty">No students found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

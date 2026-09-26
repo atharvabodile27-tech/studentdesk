@@ -42,13 +42,13 @@
         <td style="white-space:nowrap">
           <a class="btn small secondary" href="{{ url_for('main.student_edit', student_id=s.id) }}">Edit</a>
           <form method="POST" action="{{ url_for('main.student_delete', student_id=s.id) }}"
-                style="display:inline" onsubmit="return confirm('{{ s.name }} ko delete karna hai?');">
+                style="display:inline" onsubmit="return confirm('{{ s.name }} - delete this student?');">
             <button class="btn small danger" type="submit">Delete</button>
           </form>
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="10" class="empty">Koi student nahi mila. "+ Add Student" pe click karo.</td></tr>
+      <tr><td colspan="10" class="empty">No students found. Click "+ Add Student" to add one.</td></tr>
       {% endfor %}
     </tbody>
   </table>
