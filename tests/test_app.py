@@ -32,7 +32,7 @@ class TestHealthAndPages:
     def test_wrong_password_rejected(self, client):
         res = client.post("/login", data={"username": "admin", "password": "wrong"},
                           follow_redirects=True)
-        assert b"Galat username ya password" in res.data
+        assert b"Incorrect username or password" in res.data
 
     def test_logout(self, auth_client):
         res = auth_client.get("/logout", follow_redirects=True)
@@ -52,7 +52,7 @@ class TestStudentCRUDUI:
         payload = {"roll_no": "CS2021001", "name": "Dup", "email": "dup@example.com",
                    "course": "MCA", "year": "1", "marks": "50", "status": "Active"}
         res = auth_client.post("/students/new", data=payload, follow_redirects=True)
-        assert b"pehle se exist karta hai" in res.data
+        assert b"This Roll Number already exists" in res.data
 
     def test_marks_out_of_range_rejected(self, auth_client):
         payload = {"roll_no": "CS999", "name": "Bad", "email": "bad@example.com",
