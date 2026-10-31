@@ -5,7 +5,7 @@
 # ===================================================================
 
 # Python ka official slim image (chhota size = fast build & pull)
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 # Metadata labels - image ke baare me info (Jenkins/registry me dikhta hai)
 LABEL maintainer="student@example.com"
